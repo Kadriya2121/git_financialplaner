@@ -1,16 +1,18 @@
-from datetime import datetime
-from typing import Optional
+from datetime import date
 import re
 
 class Category:
-    def __init__(self, name: str):
+    """Категория расходов/доходов."""
+    
+    def __init__(self, name: str, category_type: str = "expense"):
         if not self._is_valid_name(name):
-            raise ValueError("Некорректное название категории")
+            raise ValueError("Название категории должно содержать буквы/цифры")
         self.name = name.strip()
+        self.category_type = category_type  # "expense" или "income"
 
-    @staticmethod
-    def _is_valid_name(name: str) -> bool:
-        return bool(re.match(r'^[a-zA-Za-яА-Я\s]+$', name))
+    def _is_valid_name(self, name: str) -> bool:
+        """Проверка имени через регулярное выражение."""
+        return bool(re.match(r"^[\w\s]+$", name))
 
     def __str__(self):
         return self.name
@@ -18,20 +20,28 @@ class Category:
 
 
 class Transaction:
-    def __init__(
-        self,
-        amount: float,
-        category: Category,
-        date: Optional[datetime] = None,
-        comment: str = ""
-    ):
-        if amount <= 0:
-            raise ValueError("Сумма должна быть положительной")
-        self.amount = amount
+    """Финансовая операция."""
+
+    def __init__(self, amount: float, category: Category, date: date, comment: str = ""):
+        self._validate_amount(amount)
+        self.amount = float(amount)
         self.category = category
-        self.date = date or datetime.now()
+        self.date = date
         self.comment = comment.strip()
 
-    def __repr__(self):
-        return (f"Transaction(amount={self.amount}, category={self.category}, "
-            f"date={self.date.strftime('%Y-%m-%d')}, comment='{self.comment}')")
+    def _validate_amount(self, amount):
+        """Валидация суммы."""
+        if not isinstance(amount, (int, float)):
+            raise TypeError("Сумма должна быть числом")
+        if amount == 0:
+            raise ValueError("Сумма не может быть нулевой")
+
+    def to_dict(self) -> dict:
+        """Преобразование в словарь для сохранения."""
+        return {
+            "amount": self.amount,
+            "category": self.category.name,
+            "category_type": self.category.category_type,
+            "date": self.date.isoformat(),
+            "comment": self.comment
+        }
